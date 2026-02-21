@@ -1,0 +1,6 @@
+/target/
+/.scarb-cache/
+/.snfoundry_cache/
+/rigel-prover/target/
+/rigel-prover/fuzz/target/
+/.cargo/
