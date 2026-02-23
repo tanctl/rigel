@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: 2.14.0
+
+      - name: Install Starknet Foundry
+        uses: foundry-rs/setup-snfoundry@v4
+        with:
+          starknet-foundry-version: 0.56.0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.93.0
+          components: clippy
+
+      - name: Verify Toolchain Versions
+        run: |
+          set -euo pipefail
+          test "$(scarb --version | head -n 1 | awk '{print $2}')" = "2.14.0"
+          test "$(snforge --version | awk '{print $2}')" = "0.56.0"
+          test "$(universal-sierra-compiler --version | awk '{print $2}')" = "2.7.0"
+          test "$(rustc --version | awk '{print $2}')" = "1.93.0"
+          test "$(cargo --version | awk '{print $2}')" = "1.93.0"
+
+      - name: Run CI
+        run: bash scripts/ci.sh
+
+      - name: Upload snforge output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snforge-output
+          path: /tmp/snforge.out
+          if-no-files-found: ignore

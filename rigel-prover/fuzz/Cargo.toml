@@ -1,0 +1,24 @@
+[package]
+name = "rigel-prover-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = "1"
+rand = "0.8"
+rand_chacha = "0.3"
+starknet-crypto = "0.8.1"
+rigel-prover = { path = ".." }
+
+[[bin]]
+name = "verify_atomic"
+path = "fuzz_targets/verify_atomic.rs"
+
+[[bin]]
+name = "verify_batch"
+path = "fuzz_targets/verify_batch.rs"
