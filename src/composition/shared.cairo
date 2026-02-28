@@ -1,7 +1,7 @@
 use core::array::{ArrayTrait, Span, SpanTrait};
 use core::poseidon::poseidon_hash_span;
 
-use crate::core::errors::VerifyResult;
+use crate::core::errors::{VerifyError, VerifyResult};
 use crate::core::transcript::Transcript;
 use crate::protocols::types::{SigmaStatement, SigmaProof};
 
@@ -13,7 +13,7 @@ pub(crate) fn append_statement(ref t: Transcript, stmt: SigmaStatement) {
 }
 
 #[inline]
-pub(crate) fn statement_label(stmt: SigmaStatement) -> felt252 {
+pub(crate) fn statement_label(stmt: SigmaStatement) -> Result<felt252, VerifyError> {
     crate::core::sigma::statement_label(stmt)
 }
 

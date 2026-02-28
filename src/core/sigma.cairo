@@ -182,6 +182,21 @@ fn absorb_statement_protocol(ref t: Transcript, stmt: SigmaStatement) {
 }
 
 #[inline]
+fn validate_statement_shape(stmt: SigmaStatement) -> VerifyResult {
+    match stmt {
+        SigmaStatement::Okamoto(s) => {
+            let n_u256: u256 = s.bases.len().into();
+            let zero: u256 = 0;
+            if n_u256 == zero || n_u256 > MAX_OKAMOTO_BASES_U256 {
+                return Err(VerifyError::InvalidStatement);
+            }
+            Ok(())
+        },
+        _ => Ok(()),
+    }
+}
+
+#[inline]
 fn transcript_for_statement(stmt: SigmaStatement) -> Transcript {
     match stmt {
         SigmaStatement::Schnorr(_) => transcript_new_schnorr(),
@@ -197,10 +212,11 @@ fn transcript_for_statement(stmt: SigmaStatement) -> Transcript {
 /// computes a statement label used by and/or composition transcripts
 /// label = h(protocol_domain, curve_id, statement_payload)
 #[inline]
-pub fn statement_label(stmt: SigmaStatement) -> felt252 {
+pub fn statement_label(stmt: SigmaStatement) -> Result<felt252, VerifyError> {
+    validate_statement_shape(stmt)?;
     let mut t = transcript_for_statement(stmt);
     absorb_statement_protocol(ref t, stmt);
-    transcript_hash(@t)
+    Ok(transcript_hash(@t))
 }
 
 #[inline]

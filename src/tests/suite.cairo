@@ -113,6 +113,21 @@ fn assert_err_exact(
     }
 }
 
+fn assert_err_exact_felt(
+    result: Result<felt252, VerifyError>, expected: VerifyError, err: felt252,
+) {
+    match result {
+        Result::Ok(_) => {
+            core::panic_with_felt252(err);
+        },
+        Result::Err(actual) => {
+            if actual != expected {
+                core::panic_with_felt252(err);
+            }
+        },
+    }
+}
+
 fn point(x: felt252, y: felt252) -> NonZeroEcPoint {
     validate_point(x, y).unwrap()
 }
@@ -1182,8 +1197,8 @@ fn and_composition_validates_shared_challenge() {
     let stmt2 = SigmaStatement::DLog(DLogStatement { base, public_key: public_key2 });
 
     let mut labels = ArrayTrait::new();
-    labels.append(crate::core::sigma::statement_label(stmt1));
-    labels.append(crate::core::sigma::statement_label(stmt2));
+    labels.append(crate::core::sigma::statement_label(stmt1).unwrap());
+    labels.append(crate::core::sigma::statement_label(stmt2).unwrap());
     let composition_label = fold_composition_labels(PROTOCOL_AND, labels.span()).unwrap();
 
     let mut transcript = transcript_new_and();
@@ -1228,8 +1243,8 @@ fn or_composition_validates_challenge_sum() {
     let stmt2 = SigmaStatement::DLog(DLogStatement { base, public_key: public_key2 });
 
     let mut labels = ArrayTrait::new();
-    labels.append(crate::core::sigma::statement_label(stmt1));
-    labels.append(crate::core::sigma::statement_label(stmt2));
+    labels.append(crate::core::sigma::statement_label(stmt1).unwrap());
+    labels.append(crate::core::sigma::statement_label(stmt2).unwrap());
     let composition_label = fold_composition_labels(PROTOCOL_OR, labels.span()).unwrap();
 
     let mut transcript = transcript_new_or();
@@ -1292,6 +1307,89 @@ fn or_composition_validates_challenge_sum() {
 }
 
 #[test]
+fn statement_label_rejects_oversized_okamoto_statement() {
+    let g = generator();
+
+    let mut bases = ArrayTrait::new();
+    let mut responses = ArrayTrait::new();
+    let mut i: u32 = 0;
+    loop {
+        if i >= 65_u32 {
+            break;
+        }
+        bases.append(g);
+        responses.append(0);
+        i += 1;
+    }
+
+    let stmt = SigmaStatement::Okamoto(OkamotoStatement { bases: bases.span(), y: g });
+    assert_err_exact_felt(
+        crate::core::sigma::statement_label(stmt),
+        VerifyError::InvalidStatement,
+        'OK_LABEL_BAD',
+    );
+}
+
+#[test]
+fn and_composition_rejects_oversized_okamoto_statement() {
+    let g = generator();
+
+    let mut bases = ArrayTrait::new();
+    let mut responses = ArrayTrait::new();
+    let mut i: u32 = 0;
+    loop {
+        if i >= 65_u32 {
+            break;
+        }
+        bases.append(g);
+        responses.append(0);
+        i += 1;
+    }
+
+    let mut instances = ArrayTrait::new();
+    instances.append(AndInstance {
+        statement: SigmaStatement::Okamoto(OkamotoStatement { bases: bases.span(), y: g }),
+        proof: SigmaProof::Okamoto(OkamotoProof { commitment: g, responses: responses.span() }),
+    });
+
+    assert_err_exact(
+        verify_and(instances.span(), ctx(243).span()),
+        VerifyError::InvalidStatement,
+        'AND_OK_SIZE',
+    );
+}
+
+#[test]
+fn or_composition_rejects_oversized_okamoto_statement() {
+    let g = generator();
+
+    let mut bases = ArrayTrait::new();
+    let mut responses = ArrayTrait::new();
+    let mut i: u32 = 0;
+    loop {
+        if i >= 65_u32 {
+            break;
+        }
+        bases.append(g);
+        responses.append(0);
+        i += 1;
+    }
+
+    let mut instances = ArrayTrait::new();
+    instances.append(OrInstance {
+        statement: SigmaStatement::Okamoto(OkamotoStatement { bases: bases.span(), y: g }),
+        proof: SigmaProof::Okamoto(OkamotoProof { commitment: g, responses: responses.span() }),
+        challenge: 1,
+    });
+
+    assert_err_exact(
+        verify_or(instances.span(), ctx(244).span()),
+        VerifyError::InvalidStatement,
+        'OR_OK_SIZE',
+    );
+}
+
+#[test]
 fn and_composition_bytes_validates_shared_challenge() {
     let g = generator();
     let base = pedersen_h();
@@ -1309,8 +1407,8 @@ fn and_composition_bytes_validates_shared_challenge() {
     let stmt2 = SigmaStatement::DLog(DLogStatement { base, public_key: public_key2 });
 
     let mut labels = ArrayTrait::new();
-    labels.append(crate::core::sigma::statement_label(stmt1));
-    labels.append(crate::core::sigma::statement_label(stmt2));
+    labels.append(crate::core::sigma::statement_label(stmt1).unwrap());
+    labels.append(crate::core::sigma::statement_label(stmt2).unwrap());
     let composition_label = fold_composition_labels(PROTOCOL_AND, labels.span()).unwrap();
 
     let mut transcript = transcript_new_and();
@@ -1357,8 +1455,8 @@ fn or_composition_bytes_validates_challenge_sum() {
     let stmt2 = SigmaStatement::DLog(DLogStatement { base, public_key: public_key2 });
 
     let mut labels = ArrayTrait::new();
-    labels.append(crate::core::sigma::statement_label(stmt1));
-    labels.append(crate::core::sigma::statement_label(stmt2));
+    labels.append(crate::core::sigma::statement_label(stmt1).unwrap());
+    labels.append(crate::core::sigma::statement_label(stmt2).unwrap());
     let composition_label = fold_composition_labels(PROTOCOL_OR, labels.span()).unwrap();
 
     let mut transcript = transcript_new_or();

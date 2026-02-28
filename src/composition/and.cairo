@@ -30,7 +30,7 @@ pub fn verify_and(instances: Span<AndInstance>, context: Span<felt252>) -> Verif
         match label_iter.pop_front() {
             Some(inst_ref) => {
                 let inst = *inst_ref;
-                labels.append(statement_label(inst.statement));
+                labels.append(statement_label(inst.statement)?);
             },
             None => { break; },
         }
@@ -96,7 +96,7 @@ pub fn verify_and_bytes(instances: Span<u8>, context: Span<felt252>) -> VerifyRe
             break;
         }
         let (stmt, _proof) = pop_instance(ref label_iter)?;
-        labels.append(statement_label(stmt));
+        labels.append(statement_label(stmt)?);
     }
     let Some(composition_label) = fold_composition_labels(PROTOCOL_AND, labels.span()) else {
         return Err(VerifyError::EmptyInstances);
